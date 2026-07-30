@@ -401,6 +401,10 @@
         <span class="result-value red" id="r-cost">—</span>
       </div>
       <div class="result-row">
+        <span class="result-label">Driver pay</span>
+        <span class="result-value red" id="r-driverpay">—</span>
+      </div>
+      <div class="result-row">
         <span class="result-label">Gross revenue</span>
         <span class="result-value" id="r-gross">—</span>
       </div>
@@ -435,6 +439,7 @@
 
 <script>
   const $ = id => document.getElementById(id);
+  const DRIVER_PAY_RATE = 0.50; // already baked into cost per mile above
 
   function fmt(n, decimals=2, prefix='$') {
     if (!isFinite(n)) return '—';
@@ -457,6 +462,7 @@
     const loadedRate   = loaded  > 0 ? flat / loaded   : 0;
     const effRate      = totalMiles > 0 ? flat / totalMiles : 0;
     const runCost      = totalMiles * cpm;
+    const driverPay    = totalMiles * DRIVER_PAY_RATE; // informational only, already inside runCost
     const dispatchFee  = flat * (dispatchPct / 100);
     const profit       = flat - runCost - dispatchFee;
 
@@ -465,6 +471,7 @@
     $('r-loaded-rate').textContent = loaded > 0 ? fmt(loadedRate, 3) + '/mi' : '—';
     $('r-eff-rate').textContent    = totalMiles > 0 ? fmt(effRate, 3) + '/mi' : '—';
     $('r-cost').textContent        = runCost > 0 ? fmt(runCost) : '—';
+    $('r-driverpay').textContent   = driverPay > 0 ? fmt(driverPay) : '—';
     $('r-gross').textContent       = flat > 0 ? fmt(flat) : '—';
     $('r-dispatch').textContent    = dispatchFee > 0 ? fmt(dispatchFee) : '—';
 
@@ -514,7 +521,7 @@
     $('verdict-sub').textContent = 'Fill in the rate, loaded miles, and deadhead above';
     $('bar-wrap').style.display = 'none';
     $('bar-labels').style.display = 'none';
-    ['r-total-miles','r-loaded-rate','r-eff-rate','r-cost','r-gross','r-dispatch','r-profit'].forEach(id => {
+    ['r-total-miles','r-loaded-rate','r-eff-rate','r-cost','r-driverpay','r-gross','r-dispatch','r-profit'].forEach(id => {
       $(id).textContent = '—';
     });
     $('r-profit').className = 'result-value green';
