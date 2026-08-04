@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fuel Tracker">
+<meta name="theme-color" content="#0f1923">
+<title>Fuel Tracker — Klockwork Logistics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg:        #0f1923;
+    --surface:   #1a2535;
+    --border:    #263348;
+    --accent:    #f5a623;
+    --green:     #27c97a;
+    --red:       #e84c3d;
+    --blue:      #3b82f6;
+    --purple:    #a78bfa;
+    --text:      #e8ecf0;
+    --muted:     #7a8fa6;
+    --input-bg:  #0d1520;
+    --radius:    14px;
+    --font-mono: 'SF Mono', 'Fira Mono', monospace;
+    --font-sans: -apple-system, 'SF Pro Display', system-ui, sans-serif;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-sans); overscroll-behavior: none; }
+
+  .app { max-width: 430px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
+
+  /* HEADER */
+  .header {
+    padding: 20px 20px 14px;
+    padding-top: calc(env(safe-area-inset-top) + 16px);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .logo { width: 36px; height: 36px; background: var(--green); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .header p  { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; margin-left: 48px; }
+
+  /* TABS */
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* BODY */
+  .body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .tab-content { display: none; flex-direction: column; gap: 14px; }
+  .tab-content.active { display: flex; }
+
+  /* SECTION TITLE */
+  .section-title { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); padding: 0 2px; }
+
+  /* CARD */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+
+  /* FIELD */
+  .field { padding: 13px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .field:last-child { border-bottom: none; }
+  .field-label { font-size: 14px; color: var(--text); flex: 1; line-height: 1.3; }
+  .field-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .field input {
+    background: var(--input-bg); border: 1.5px solid var(--border);
+    border-radius: 10px; color: var(--accent);
+    font-family: var(--font-mono); font-size: 18px; font-weight: 600;
+    width: 120px; padding: 8px 12px; text-align: right; outline: none;
+    transition: border-color 0.15s; -webkit-appearance: none;
+  }
+  .field input:focus { border-color: var(--accent); background: #131e2e; }
+  .field input.green-input { color: var(--green); }
+  .field input.blue-input  { color: var(--blue); }
+
+  /* STAT GRID */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .stat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); }
+  .stat-value { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.amber  { color: var(--accent); }
+  .stat-value.red    { color: var(--red); }
+  .stat-value.blue   { color: var(--blue); }
+  .stat-value.purple { color: var(--purple); }
+  .stat-sub { font-size: 11px; color: var(--muted); }
+
+  /* RESULT ROWS */
+  .result-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+  .result-row:last-child { border-bottom: none; }
+  .result-label { font-size: 13px; color: var(--muted); }
+  .result-value { font-family: var(--font-mono); font-size: 15px; font-weight: 600; color: var(--text); }
+  .result-value.green  { color: var(--green); }
+  .result-value.amber  { color: var(--accent); }
+  .result-value.red    { color: var(--red); }
+  .result-value.blue   { color: var(--blue); }
+
+  /* GOAL BAR */
+  .goal-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .goal-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .goal-pct { font-family: var(--font-mono); font-size: 20px; font-weight: 700; }
+  .goal-bar-track { background: #0d1520; border-radius: 8px; height: 10px; overflow: hidden; margin-bottom: 8px; }
+  .goal-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease, background 0.3s; min-width: 2px; }
+  .goal-bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
+
+  /* LOG LIST */
+  .log-list { display: flex; flex-direction: column; gap: 8px; }
+  .log-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .log-item-left .log-date { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+  .log-item-left .log-desc { font-size: 13px; font-weight: 600; color: var(--text); }
+  .log-item-right { text-align: right; }
+  .log-item-right .log-cost { font-family: var(--font-mono); font-size: 15px; font-weight: 700; color: var(--accent); }
+  .log-item-right .log-detail { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .empty-log { text-align: center; padding: 32px 16px; color: var(--muted); font-size: 13px; }
+
+  /* BUTTONS */
+  .btn-primary {
+    background: var(--accent); color: #0f1923;
+    border: none; border-radius: 12px; padding: 14px;
+    width: 100%; font-size: 15px; font-weight: 700;
+    font-family: var(--font-sans); cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:active { opacity: 0.8; }
+
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 10px; padding: 12px;
+    width: 100%; font-size: 13px; font-family: var(--font-sans);
+    cursor: pointer; transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-ghost:active { border-color: var(--accent); color: var(--accent); }
+
+  /* WEEKLY GOAL INPUT ROW */
+  .goal-input-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; }
+  .goal-input-row label { font-size: 13px; color: var(--text); flex: 1; }
+  .goal-input-row input { background: var(--input-bg); border: 1.5px solid #27c97a40; border-radius: 8px; color: var(--green); font-family: var(--font-mono); font-size: 16px; font-weight: 600; width: 90px; padding: 6px 10px; text-align: right; outline: none; -webkit-appearance: none; }
+  .goal-input-row input:focus { border-color: var(--green); }
+
+  /* MPG RATING */
+  .mpg-rating { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .mpg-good { background: #0d2a1a; color: var(--green); }
+  .mpg-ok   { background: #2a2212; color: var(--accent); }
+  .mpg-low  { background: #2a0d0d; color: var(--red); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">⛽</div>
+      <div><h1>Fuel Tracker</h1></div>
+    </div>
+    <p>Klockwork Logistics</p>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('fillup')">Fill-Up</div>
+    <div class="tab" onclick="switchTab('weekly')">Weekly Miles</div>
+    <div class="tab" onclick="switchTab('history')">History</div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- ── TAB 1: FILL-UP ── -->
+    <div class="tab-content active" id="tab-fillup">
+
+      <div class="section-title">Log a Fill-Up</div>
+      <div class="card">
+        <div class="field">
+          <div>
+            <div class="field-label">Gallons Pumped</div>
+            <div class="field-sub">From the pump display</div>
+          </div>
+          <input type="number" id="gallons" placeholder="0.0" inputmode="decimal" step="0.1">
+        </div>
+        <div class="field">
+          <div>
+            <div class="field-label">Price Per Gallon</div>
+            <div class="field-sub">Posted price at pump</div>
+          </div>
+          <input type="number" id="pricepg" placeholder="$0.00" inputmode="decimal" step="0.01" class="green-input">
+        </div>
+        <div class="field">
+          <div>
+            <div class="field-label">Odometer Reading</div>
+            <div class="field-sub">Current miles on truck</div>
+          </div>
+          <input type="number" id="odometer" placeholder="00000" inputmode="numeric" class="blue-input">
+        </div>
+      </div>
+
+      <!-- Live calcs -->
+      <div class="card" id="fillup-results">
+        <div class="result-row">
+          <span class="result-label">Total fuel cost</span>
+          <span class="result-value amber" id="r-total-cost">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Miles since last fill-up</span>
+          <span class="result-value blue" id="r-miles-since">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">MPG this tank</span>
+          <span class="result-value" id="r-mpg">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Fuel cost per mile</span>
+          <span class="result-value" id="r-cpm">—</span>
+        </div>
+      </div>
+
+      <!-- MPG stats -->
+      <div class="stat-grid" id="mpg-stats">
+        <div class="stat-card">
+          <div class="stat-label">Best MPG</div>
+          <div class="stat-value green" id="s-best-mpg">—</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg MPG</div>
+          <div class="stat-value amber" id="s-avg-mpg">—</div>
+          <div class="stat-sub">All fill-ups</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Spent</div>
+          <div class="stat-value red" id="s-total-spent">—</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg $/Mile</div>
+          <div class="stat-value purple" id="s-avg-cpm">—</div>
+          <div class="stat-sub">Fuel only</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="logFillup()">⛽  Log This Fill-Up</button>
+      <button class="btn-ghost" onclick="clearFillupInputs()">Clear</button>
+
+    </div>
+
+    <!-- ── TAB 2: WEEKLY MILES ── -->
+    <div class="tab-content" id="tab-weekly">
+
+      <div class="goal-input-row">
+        <label>Weekly Miles Goal</label>
+        <input type="number" id="weekly-goal" value="3000" inputmode="numeric" oninput="updateWeeklyCalc()">
+      </div>
+
+      <div class="section-title">This Week's Miles</div>
+      <div class="card">
+        <div class="field">
+          <div>
+            <div class="field-label">Odometer Start (Monday)</div>
+            <div class="field-sub">Reading at start of week</div>
+          </div>
+          <input type="number" id="odo-start" placeholder="00000" inputmode="numeric" class="blue-input" oninput="updateWeeklyCalc()">
+        </div>
+        <div class="field">
+          <div>
+            <div class="field-label">Odometer Now</div>
+            <div class="field-sub">Current reading</div>
+          </div>
+          <input type="number" id="odo-now" placeholder="00000" inputmode="numeric" class="blue-input" oninput="updateWeeklyCalc()">
+        </div>
+      </div>
+
+      <!-- Weekly stats -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Miles Driven</div>
+          <div class="stat-value blue" id="w-miles-driven">0</div>
+          <div class="stat-sub">This week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Miles Left</div>
+          <div class="stat-value amber" id="w-miles-left">3,000</div>
+          <div class="stat-sub">To hit goal</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Est. Fuel Cost</div>
+          <div class="stat-value red" id="w-fuel-cost">—</div>
+          <div class="stat-sub">At avg MPG & price</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Day of Week</div>
+          <div class="stat-value" id="w-day" style="font-size:16px;">—</div>
+          <div class="stat-sub" id="w-pace">—</div>
+        </div>
+      </div>
+
+      <!-- Goal bar -->
+      <div class="goal-section">
+        <div class="goal-header">
+          <div class="goal-title">Weekly Goal Progress</div>
+          <div class="goal-pct" id="w-pct" style="color: var(--accent);">0%</div>
+        </div>
+        <div class="goal-bar-track">
+          <div class="goal-bar-fill" id="w-bar" style="width:0%; background: var(--green);"></div>
+        </div>
+        <div class="goal-bar-labels">
+          <span>0 mi</span>
+          <span id="w-goal-label">3,000 mi goal</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="result-row">
+          <span class="result-label">Miles per day needed (remaining days)</span>
+          <span class="result-value amber" id="w-mpd-needed">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">On pace to hit goal?</span>
+          <span class="result-value" id="w-on-pace">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Projected week total</span>
+          <span class="result-value" id="w-projected">—</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── TAB 3: HISTORY ── -->
+    <div class="tab-content" id="tab-history">
+      <div class="section-title">Fill-Up History</div>
+      <div class="log-list" id="history-list">
+        <div class="empty-log">No fill-ups logged yet.<br>Add your first one on the Fill-Up tab.</div>
+      </div>
+      <button class="btn-primary" onclick="exportCSV()" id="export-btn" style="display:none;">📥  Export to CSV</button>
+      <button class="btn-ghost" onclick="clearHistory()" id="clear-history-btn" style="display:none; margin-top: 4px;">Clear All History</button>
+    </div>
+
+  </div><!-- /body -->
+</div><!-- /app -->
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ── STATE ──
+let fillups = JSON.parse(localStorage.getItem('kl_fillups') || '[]');
+
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['fillup','weekly','history'][i] === name));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  $(`tab-${name}`).classList.add('active');
+  if (name === 'weekly') updateWeeklyCalc();
+  if (name === 'history') renderHistory();
+}
+
+// ── HELPERS ──
+function fmt(n, dec=2, pre='$') {
+  if (!isFinite(n) || isNaN(n)) return '—';
+  return pre + n.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function fmtMi(n) { return isFinite(n) && n > 0 ? n.toLocaleString() + ' mi' : '—'; }
+
+function getMpgRating(mpg) {
+  if (mpg >= 10) return ['mpg-good', '✅ Good'];
+  if (mpg >= 7)  return ['mpg-ok',   '🟡 Average'];
+  return ['mpg-low', '🔴 Low'];
+}
+
+// ── FILL-UP LIVE CALC ──
+function calcFillup() {
+  const gallons = parseFloat($('gallons').value) || 0;
+  const ppg     = parseFloat($('pricepg').value) || 0;
+  const odo     = parseFloat($('odometer').value) || 0;
+
+  const totalCost = gallons * ppg;
+  $('r-total-cost').textContent = gallons && ppg ? fmt(totalCost) : '—';
+
+  // Miles since last fill-up
+  const lastOdo = fillups.length > 0 ? fillups[fillups.length-1].odometer : 0;
+  const milesSince = lastOdo && odo > lastOdo ? odo - lastOdo : null;
+  $('r-miles-since').textContent = milesSince ? fmtMi(milesSince) : '—';
+
+  // MPG
+  const mpg = milesSince && gallons ? milesSince / gallons : null;
+  if (mpg) {
+    const [cls, label] = getMpgRating(mpg);
+    $('r-mpg').textContent = mpg.toFixed(1) + ' mpg';
+    $('r-mpg').className = 'result-value ' + (mpg >= 10 ? 'green' : mpg >= 7 ? 'amber' : 'red');
+  } else {
+    $('r-mpg').textContent = '—'; $('r-mpg').className = 'result-value';
+  }
+
+  // Cost per mile
+  const cpm = milesSince && totalCost ? totalCost / milesSince : null;
+  $('r-cpm').textContent = cpm ? fmt(cpm, 3) + '/mi' : '—';
+  $('r-cpm').className = 'result-value ' + (cpm ? (cpm < 0.30 ? 'green' : cpm < 0.45 ? 'amber' : 'red') : '');
+
+  updateStats();
+}
+
+// ── UPDATE STATS ──
+function updateStats() {
+  if (!fillups.length) {
+    ['s-best-mpg','s-avg-mpg','s-total-spent','s-avg-cpm'].forEach(id => $(id).textContent = '—');
+    return;
+  }
+  const mpgs   = fillups.filter(f => f.mpg).map(f => f.mpg);
+  const bestMpg = mpgs.length ? Math.max(...mpgs) : null;
+  const avgMpg  = mpgs.length ? mpgs.reduce((a,b)=>a+b,0)/mpgs.length : null;
+  const totalSpent = fillups.reduce((a,f)=>a+f.totalCost,0);
+  const totalMiles = fillups.reduce((a,f)=>a+(f.milesSince||0),0);
+  const avgCpm = totalMiles ? totalSpent/totalMiles : null;
+
+  $('s-best-mpg').textContent = bestMpg ? bestMpg.toFixed(1) : '—';
+  $('s-avg-mpg').textContent  = avgMpg  ? avgMpg.toFixed(1)  : '—';
+  $('s-total-spent').textContent = fmt(totalSpent);
+  $('s-avg-cpm').textContent = avgCpm ? fmt(avgCpm,3,'$') + '/mi' : '—';
+}
+
+// ── LOG FILL-UP ──
+function logFillup() {
+  const gallons = parseFloat($('gallons').value);
+  const ppg     = parseFloat($('pricepg').value);
+  const odo     = parseFloat($('odometer').value);
+
+  if (!gallons || !ppg || !odo) {
+    alert('Please fill in gallons, price per gallon, and odometer reading.');
+    return;
+  }
+
+  const lastOdo = fillups.length > 0 ? fillups[fillups.length-1].odometer : null;
+  const milesSince = lastOdo && odo > lastOdo ? odo - lastOdo : null;
+  const mpg = milesSince ? milesSince / gallons : null;
+  const totalCost = gallons * ppg;
+
+  const entry = {
+    date: new Date().toLocaleDateString(),
+    gallons, ppg, odometer: odo,
+    totalCost, milesSince, mpg,
+    cpm: milesSince ? totalCost / milesSince : null
+  };
+
+  fillups.push(entry);
+  localStorage.setItem('kl_fillups', JSON.stringify(fillups));
+
+  clearFillupInputs();
+  updateStats();
+  alert(`✅ Fill-up logged!\n${gallons} gal · $${totalCost.toFixed(2)}${mpg ? ' · ' + mpg.toFixed(1) + ' MPG' : ''}`);
+}
+
+function clearFillupInputs() {
+  ['gallons','pricepg','odometer'].forEach(id => $(id).value = '');
+  ['r-total-cost','r-miles-since','r-mpg','r-cpm'].forEach(id => { $(id).textContent = '—'; $(id).className = 'result-value'; });
+}
+
+// ── WEEKLY CALC ──
+function updateWeeklyCalc() {
+  const goal     = parseFloat($('weekly-goal').value) || 3000;
+  const odoStart = parseFloat($('odo-start').value) || 0;
+  const odoNow   = parseFloat($('odo-now').value) || 0;
+
+  const driven = odoStart && odoNow > odoStart ? odoNow - odoStart : 0;
+  const left   = Math.max(goal - driven, 0);
+  const pct    = Math.min((driven / goal) * 100, 100);
+
+  $('w-miles-driven').textContent = driven.toLocaleString();
+  $('w-miles-left').textContent   = left.toLocaleString();
+  $('w-pct').textContent = Math.round(pct) + '%';
+  $('w-goal-label').textContent   = goal.toLocaleString() + ' mi goal';
+
+  // Color pct
+  $('w-pct').style.color = pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--accent)' : 'var(--red)';
+
+  // Bar
+  $('w-bar').style.width = pct + '%';
+  $('w-bar').style.background = pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--accent)' : 'var(--red)';
+
+  // Day of week & pace
+  const now = new Date();
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const day = now.getDay(); // 0=Sun
+  const dayLabel = dayNames[day];
+  $('w-day').textContent = dayLabel;
+
+  // Mon=1 through Sat=6, treat Mon as day 1
+  const workDay = day === 0 ? 7 : day; // Mon=1, Tue=2 ... Sun=7
+  const daysElapsed = Math.max(workDay - 1, 0); // days since Monday (Mon=0, Tue=1...)
+  const daysLeft = Math.max(6 - daysElapsed, 0); // Sat is last day (5 work days Mon-Fri + Sat)
+
+  // Miles per day needed
+  const mpdNeeded = daysLeft > 0 ? left / daysLeft : 0;
+  $('w-mpd-needed').textContent = daysLeft > 0 ? Math.ceil(mpdNeeded).toLocaleString() + ' mi/day' : (driven >= goal ? '✅ Done' : '—');
+
+  // On pace
+  const mpdActual = daysElapsed > 0 ? driven / daysElapsed : 0;
+  const projected = daysElapsed > 0 ? Math.round((driven / daysElapsed) * 6) : 0;
+  const onPace = projected >= goal;
+
+  $('w-on-pace').textContent = driven === 0 ? '—' : (onPace ? '✅ Yes' : '🔴 No');
+  $('w-on-pace').className = 'result-value ' + (driven === 0 ? '' : onPace ? 'green' : 'red');
+  $('w-projected').textContent = projected > 0 ? projected.toLocaleString() + ' mi' : '—';
+  $('w-projected').className = 'result-value ' + (projected >= goal ? 'green' : projected > 0 ? 'red' : '');
+
+  // Pace sub
+  $('w-pace').textContent = daysElapsed > 0 ? `${mpdActual.toFixed(0)} mi/day avg` : 'Week starts Monday';
+
+  // Estimated fuel cost this week
+  const avgMpgs = fillups.filter(f=>f.mpg).map(f=>f.mpg);
+  const avgMpg  = avgMpgs.length ? avgMpgs.reduce((a,b)=>a+b,0)/avgMpgs.length : null;
+  const lastPpg = fillups.length ? fillups[fillups.length-1].ppg : null;
+  if (avgMpg && lastPpg && goal > 0) {
+    const estFuel = (goal / avgMpg) * lastPpg;
+    $('w-fuel-cost').textContent = fmt(estFuel);
+  } else {
+    $('w-fuel-cost').textContent = 'Log fills first';
+  }
+}
+
+// ── HISTORY ──
+function renderHistory() {
+  const list = $('history-list');
+  $('clear-history-btn').style.display = fillups.length ? 'block' : 'none';
+  $('export-btn').style.display = fillups.length ? 'block' : 'none';
+
+  if (!fillups.length) {
+    list.innerHTML = '<div class="empty-log">No fill-ups logged yet.<br>Add your first one on the Fill-Up tab.</div>';
+    return;
+  }
+
+  const items = [...fillups].reverse().map((f,i) => {
+    const mpgBadge = f.mpg ? `<span class="mpg-rating ${f.mpg>=10?'mpg-good':f.mpg>=7?'mpg-ok':'mpg-low'}">${f.mpg.toFixed(1)} MPG</span>` : '';
+    return `
+      <div class="log-item">
+        <div class="log-item-left">
+          <div class="log-date">${f.date}</div>
+          <div class="log-desc">${f.gallons.toFixed(1)} gal · $${f.ppg.toFixed(2)}/gal ${mpgBadge}</div>
+        </div>
+        <div class="log-item-right">
+          <div class="log-cost">${fmt(f.totalCost)}</div>
+          <div class="log-detail">${f.milesSince ? f.milesSince.toLocaleString()+' mi' : 'First fill'}</div>
+        </div>
+      </div>`;
+  }).join('');
+  list.innerHTML = items;
+}
+
+function exportCSV() {
+  if (!fillups.length) { alert('No fill-ups to export yet.'); return; }
+
+  const headers = ['Date','Gallons','Price Per Gallon','Total Cost','Odometer','Miles Since Last Fill','MPG','Fuel Cost Per Mile'];
+  const rows = fillups.map(f => [
+    f.date,
+    f.gallons.toFixed(2),
+    f.ppg.toFixed(3),
+    f.totalCost.toFixed(2),
+    f.odometer,
+    f.milesSince || '',
+    f.mpg ? f.mpg.toFixed(2) : '',
+    f.cpm ? f.cpm.toFixed(4) : ''
+  ]);
+
+  // Build CSV string
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+
+  // Week range label for filename
+  const dates = fillups.map(f => f.date);
+  const weekLabel = dates.length > 1 ? `${dates[0].replace(/\//g,'-')}_to_${dates[dates.length-1].replace(/\//g,'-')}` : dates[0].replace(/\//g,'-');
+  const filename = `Klockwork_Fuel_${weekLabel}.csv`;
+
+  // Trigger download
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function clearHistory() {
+  if (confirm('Clear all fill-up history?')) {
+    fillups = [];
+    localStorage.removeItem('kl_fillups');
+    renderHistory();
+    updateStats();
+  }
+}
+
+// ── INIT ──
+['gallons','pricepg','odometer'].forEach(id => $(id).addEventListener('input', calcFillup));
+updateStats();
+updateWeeklyCalc();
+</script>
+</body>
+</html>
